@@ -2,77 +2,59 @@ from util import *
 
 data = get_data(4, split=False)
 
+
 def create_passports(data):
     passports = []
-    lines = data.split("\n\n")
 
-    for line in lines:        
+    for line in data.split("\n\n"):
         passport = {}
         entries = line.split()
         for entry in entries:
             k, v = entry.split(":")
             passport[k] = v
         passports.append(passport)
+
     return passports
 
-def p1(data):
 
+def validate(data, validate_function):
     required = {"byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"}
-    optional = {"cid"}
+    num_valid = 0
 
     passports = create_passports(data)
-    num_valid = 0
+
     for passport in passports:
-        valid = True    
+        valid = True
         for field in required:
-            if field not in passport.keys():
+            if field not in passport.keys() or not validate_function(field, passport):
                 valid = False
         num_valid += valid
+        
     return num_valid
+
+
+def p1(data):
+    return validate(data, lambda field, passport: True)
+
+
+def p2(data):
+    return validate(data, lambda field, passport: globals()[field](passport[field]))
+
 
 byr = lambda x: len(x) == 4 and int(x) >= 1920 and int(x) <= 2002
 iyr = lambda x: len(x) == 4 and int(x) >= 2010 and int(x) <= 2020
 eyr = lambda x: len(x) == 4 and int(x) >= 2020 and int(x) <= 2030
-
-def hgt(x):
-    if x.endswith("cm"):
-        val = x.replace("cm", "")
-        if not val.isdigit():
-            return False
-        num = int(val)
-        if num >= 150 and num <= 193:
-            return True
-    if x.endswith("in"):
-        val = x.replace("in", "")
-        if not val.isdigit():
-            return False
-        num = int(val)
-        if num >= 59 and num <= 76:
-            return True
-    return False
-
-hcl = lambda x: re.search(r'#[0-9a-fA-F]{6}', x)
+hcl = lambda x: re.search(r"#[0-9a-fA-F]{6}", x)
 ecl = lambda x: x in {"amb", "blu", "brn", "gry", "grn", "hzl", "oth"}
 pid = lambda x: len(x) == 9 and x.isdigit()
-
-def p2(data):
-    num_valid = 0
-    passports = create_passports(data)
-
-    required = {"byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"}
-    optional = {"cid"}
-
-    passports = create_passports(data)
-    num_valid = 0
-    for passport in passports:
-        valid = True    
-        for field in required:
-            if field not in passport.keys() or not globals()[field](passport[field]):
-                valid = False
-        num_valid += valid
-    return num_valid
+hgt = lambda x: re.search(r".*\d\w(in|cm)$", x) and hgt_func(x)
 
 
+def hgt_func(x):
+    height = int(x.strip("cm").strip("in"))
+    return (
+        height >= 150 and height <= 193 if "cm" in x else height >= 59 and height <= 76
+    )
 
 
 def test():
@@ -124,7 +106,7 @@ iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719
 """
 
     run_tests(p1, [(data, 2)], delim=None)
-    # run_tests(p2, [(data2, 0)], delim=None)
+    run_tests(p2, [(data2, 0)], delim=None)
     run_tests(p2, [(data3, 4)], delim=None)
 
 
